@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-dotenv
+supabase
+google-api-python-client
+konlpy
+scikit-learn
+transformers
+torch
+anthropic
+tqdm
+wordcloud
+matplotlib
+sklearn

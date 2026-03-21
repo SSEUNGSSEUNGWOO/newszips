@@ -1,0 +1,36 @@
+# 환경변수
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# 데이터 (대용량 파일)
+data/raw/
+data/processed/
+data/train_data.json
+
+# 모델 파일
+models/*.pkl
+models/*.pt
+models/klue_bert_classifier/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+frontend/build/

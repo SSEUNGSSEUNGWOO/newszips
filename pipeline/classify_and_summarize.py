@@ -1,0 +1,147 @@
+import os
+import json
+import joblib
+import torch
+import numpy as np
+from dotenv import load_dotenv
+from supabase import create_client
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from openai import OpenAI
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
+
+BERT_MODEL_DIR = "models/klue_bert_classifier"
+TFIDF_MODEL_DIR = "models"
+LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
+TOP_K_KEYWORDS = 5
+
+
+def load_models():
+    # BERT
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_DIR)
+    bert_model = AutoModelForSequenceClassification.from_pretrained(BERT_MODEL_DIR)
+    bert_model.to(device)
+    bert_model.eval()
+
+    # 카테고리별 TF-IDF vectorizer
+    vectorizers = {
+        label: joblib.load(os.path.join(TFIDF_MODEL_DIR, f"tfidf_{label}.pkl"))
+        for label in LABELS
+    }
+
+    return tokenizer, bert_model, vectorizers, device
+
+
+def classify(text, tokenizer, bert_model, device):
+    inputs = tokenizer(
+        [text],
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=128
+    )
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    with torch.no_grad():
+        outputs = bert_model(**inputs)
+        probs = torch.softmax(outputs.logits, dim=-1)[0].cpu().numpy()
+
+    pred_idx = int(np.argmax(probs))
+    topic = LABELS[pred_idx]
+    topic_proba = {label: round(float(probs[i]), 4) for i, label in enumerate(LABELS)}
+
+    return topic, topic_proba
+
+
+def extract_keywords(text, topic, vectorizers):
+    vectorizer = vectorizers[topic]
+    tfidf_matrix = vectorizer.transform([text])
+    feature_names = vectorizer.get_feature_names_out()
+
+    scores = np.asarray(tfidf_matrix.todense()).flatten()
+    top_indices = scores.argsort()[::-1][:TOP_K_KEYWORDS]
+    keywords = [feature_names[i] for i in top_indices if scores[i] > 0]
+
+    return keywords
+
+
+def summarize(title, text, topic, keywords):
+    keyword_str = ", ".join(keywords) if keywords else "없음"
+    prompt = f"""다음은 [{topic}] 카테고리의 뉴스 기사입니다.
+
+제목: {title}
+본문: {text[:1000]}
+
+이 기사의 핵심어는 [{keyword_str}]입니다.
+핵심어를 중심으로 3문장 이내로 간결하게 요약해주세요."""
+
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=300,
+        temperature=0.3
+    )
+
+    return response.choices[0].message.content.strip()
+
+
+def run():
+    print("모델 로딩...")
+    tokenizer, bert_model, vectorizers, device = load_models()
+
+    # transcript 있고 topic 없는 기사 가져오기
+    articles = supabase.table("articles") \
+        .select("id, title, transcript") \
+        .is_("topic", "null") \
+        .not_.is_("transcript", "null") \
+        .execute().data
+
+    print(f"처리할 기사: {len(articles)}개\n")
+
+    for article in articles:
+        article_id = article["id"]
+        title = article.get("title", "")
+        text = article.get("transcript", "")
+
+        if not text:
+            continue
+
+        print(f"[{article_id}] {title[:40]}")
+
+        # 1. 분류
+        topic, topic_proba = classify(text, tokenizer, bert_model, device)
+        print(f"  → 카테고리: {topic} ({topic_proba[topic]*100:.1f}%)")
+
+        # topic 먼저 저장 (키워드 추출에 필요)
+        supabase.table("articles").update({"topic": topic, "topic_proba": topic_proba}) \
+            .eq("id", article_id).execute()
+
+        # 2. 키워드 추출
+        keywords = extract_keywords(text, topic, vectorizers)
+        print(f"  → 핵심어: {keywords}")
+
+        # 3. 요약
+        summary = summarize(title, text, topic, keywords)
+        print(f"  → 요약: {summary[:60]}...")
+
+        # 저장
+        supabase.table("articles").update({
+            "keywords": keywords,
+            "summary": summary
+        }).eq("id", article_id).execute()
+
+        print(f"  ✓ 저장 완료\n")
+
+    print("전체 완료!")
+
+
+if __name__ == "__main__":
+    run()
