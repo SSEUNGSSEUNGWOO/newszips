@@ -27,10 +27,10 @@ def get_embeddings(texts, tokenizer, model, device):
         )
         inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.no_grad():
-            outputs = model(**inputs, output_hidden_states=True)
-            # [CLS] 토큰 벡터 = 문장 전체의 의미를 담은 벡터
-            cls_vector = outputs.hidden_states[-1][:, 0, :].squeeze().cpu().numpy()
-        embeddings.append(cls_vector)
+            outputs = model(**inputs)
+            # softmax 확률값 = 카테고리 간 분리가 가장 선명
+            probs = torch.softmax(outputs.logits, dim=-1).squeeze().cpu().numpy()
+        embeddings.append(probs)
     return np.array(embeddings)
 
 
@@ -58,8 +58,8 @@ def run():
     embeddings = get_embeddings(texts, tokenizer, model, device)
 
     print("t-SNE 계산 중...")
-    perplexity = min(30, len(texts) - 1)
-    tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
+    perplexity = min(5, len(texts) - 1)
+    tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity, max_iter=3000)
     coords = tsne.fit_transform(embeddings)
 
     print("DB 저장 중...")

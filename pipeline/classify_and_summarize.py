@@ -79,18 +79,25 @@ def extract_keywords(text, topic, vectorizers):
 def summarize(title, text, topic, keywords):
     title = html.unescape(title) if title else ""
     keyword_str = ", ".join(keywords) if keywords else "없음"
-    prompt = f"""다음은 [{topic}] 카테고리의 뉴스 기사입니다.
+    prompt = f"""당신은 뉴스 요약 전문가입니다. 다음 [{topic}] 뉴스 기사를 읽고 핵심 내용을 요약해주세요.
 
 제목: {title}
-본문: {text[:1000]}
+핵심어: {keyword_str}
 
-이 기사의 핵심어는 [{keyword_str}]입니다.
-핵심어를 중심으로 3문장 이내로 간결하게 요약해주세요."""
+기사 내용:
+{text}
+
+요약 작성 기준:
+- 누가, 무엇을, 왜, 어떻게 했는지 명확히 포함
+- 핵심 수치나 구체적 사실이 있으면 반드시 포함
+- 3~5문장으로 자연스럽게 작성
+- 뉴스 앱 독자가 기사를 읽지 않아도 내용을 파악할 수 있도록 작성
+- 불필요한 서두 없이 바로 내용으로 시작"""
 
     response = openai_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=300,
+        max_tokens=500,
         temperature=0.3
     )
 
