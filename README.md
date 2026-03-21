@@ -101,11 +101,25 @@ models/
     tfidf_정치.pkl
 
 api/                         # FastAPI 서버 (예정)
-frontend/                    # 프론트엔드 (예정)
+frontend/                    # React 프론트엔드 (예정)
 
 data/
   train_data.json            # 학습 데이터 (topic, text)
 ```
+
+---
+
+## 기술 스택
+
+| 역할 | 기술 |
+|------|------|
+| 분류 | klue/bert-base fine-tuned |
+| 핵심어 추출 | 카테고리별 TF-IDF |
+| 요약 | OpenAI gpt-4o-mini |
+| DB | Supabase |
+| 백엔드 | FastAPI (예정) → Railway 배포 |
+| 프론트엔드 | React (예정) → Vercel 배포 |
+| 크롤링 자동화 | Railway cron job (1시간 주기) |
 
 ---
 
