@@ -1,4 +1,5 @@
 import os
+import html
 import json
 import joblib
 import torch
@@ -18,9 +19,10 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 BERT_MODEL_DIR = "models/klue_bert_classifier"
-TFIDF_MODEL_DIR = "models"
+TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
 TOP_K_KEYWORDS = 5
+CONFIDENCE_THRESHOLD = 0.5
 
 
 def load_models():
@@ -55,7 +57,8 @@ def classify(text, tokenizer, bert_model, device):
         probs = torch.softmax(outputs.logits, dim=-1)[0].cpu().numpy()
 
     pred_idx = int(np.argmax(probs))
-    topic = LABELS[pred_idx]
+    confidence = float(probs[pred_idx])
+    topic = LABELS[pred_idx] if confidence >= CONFIDENCE_THRESHOLD else "기타"
     topic_proba = {label: round(float(probs[i]), 4) for i, label in enumerate(LABELS)}
 
     return topic, topic_proba
@@ -74,6 +77,7 @@ def extract_keywords(text, topic, vectorizers):
 
 
 def summarize(title, text, topic, keywords):
+    title = html.unescape(title) if title else ""
     keyword_str = ", ".join(keywords) if keywords else "없음"
     prompt = f"""다음은 [{topic}] 카테고리의 뉴스 기사입니다.
 
@@ -118,11 +122,19 @@ def run():
 
         # 1. 분류
         topic, topic_proba = classify(text, tokenizer, bert_model, device)
-        print(f"  → 카테고리: {topic} ({topic_proba[topic]*100:.1f}%)")
+        confidence = topic_proba.get(topic, 0) * 100
+        print(f"  → 카테고리: {topic} ({confidence:.1f}%)")
 
-        # topic 먼저 저장 (키워드 추출에 필요)
+        # topic 먼저 저장
         supabase.table("articles").update({"topic": topic, "topic_proba": topic_proba}) \
             .eq("id", article_id).execute()
+
+        if topic == "기타":
+            summary = summarize(title, text, topic, [])
+            print(f"  → 요약: {summary[:60]}...")
+            supabase.table("articles").update({"summary": summary}).eq("id", article_id).execute()
+            print(f"  ✓ 저장 완료\n")
+            continue
 
         # 2. 키워드 추출
         keywords = extract_keywords(text, topic, vectorizers)

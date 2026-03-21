@@ -1,9 +1,10 @@
 import os
+import html
 import isodate
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from supabase import create_client
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -14,7 +15,9 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+MIN_DURATION_SEC = 60   # 1분 (Shorts 제외)
 MAX_DURATION_SEC = 300  # 5분
+MIN_KOREAN_RATIO = 0.3  # 한글 비율 30% 이상
 
 CHANNELS = {
     "kbs": "UCcQTRi69dsVYHN3exePtZ1A",
@@ -22,13 +25,21 @@ CHANNELS = {
     "ytn": "UChlgI3UHCOnwUGzWzbJ3H5w",
 }
 
-def get_videos(channel_id, max_results=20):
+def is_korean(text):
+    korean = sum(1 for c in text if '\uAC00' <= c <= '\uD7A3')
+    total = sum(1 for c in text if c.strip())
+    return (korean / total) >= MIN_KOREAN_RATIO if total > 0 else False
+
+
+def get_videos(channel_id, max_results=50):
+    since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
     request = youtube.search().list(
         part="snippet",
         channelId=channel_id,
         maxResults=max_results,
         order="date",
-        type="video"
+        type="video",
+        publishedAfter=since
     )
     response = request.execute()
 
@@ -38,8 +49,8 @@ def get_videos(channel_id, max_results=20):
         snippet = item["snippet"]
         videos.append({
             "video_id": video_id,
-            "title": snippet.get("title", ""),
-            "description": snippet.get("description", ""),
+            "title": html.unescape(snippet.get("title", "")),
+            "description": html.unescape(snippet.get("description", "")),
             "upload_date": snippet.get("publishedAt", None),
         })
     return videos
@@ -68,17 +79,21 @@ def save_to_supabase(article):
     supabase.table("articles").insert(article).execute()
     print(f"  저장 완료: {article['title'][:30]}")
 
-def crawl(max_results=20):
+def crawl():
     for company, channel_id in CHANNELS.items():
         print(f"\n[{company.upper()}] 크롤링 시작...")
-        videos = get_videos(channel_id, max_results=max_results)
+        videos = get_videos(channel_id)
 
         saved = 0
         for video in videos:
             view_count, duration_sec = get_video_details(video["video_id"])
 
-            if duration_sec is not None and duration_sec > MAX_DURATION_SEC:
+            if duration_sec is not None and (duration_sec < MIN_DURATION_SEC or duration_sec > MAX_DURATION_SEC):
                 print(f"  스킵 ({duration_sec//60}분 {duration_sec%60}초): {video['title'][:30]}")
+                continue
+
+            if not is_korean(video["title"] + video["description"]):
+                print(f"  스킵 (한글 아님): {video['title'][:30]}")
                 continue
 
             article = {
@@ -100,4 +115,4 @@ def crawl(max_results=20):
         print(f"[{company.upper()}] 완료 — {saved}개 저장 / {len(videos)}개 중")
 
 if __name__ == "__main__":
-    crawl(max_results=20)
+    crawl()
