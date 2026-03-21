@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import kbsBg from '../assets/newszips_kbs.png';
+import sbsBg from '../assets/newszips_sbs.png';
+import ytnBg from '../assets/newszips_ytn.png';
+
+const COMPANY_BG = { kbs: kbsBg, sbs: sbsBg, ytn: ytnBg };
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -50,7 +55,12 @@ function ArticleDetail() {
   return (
     <div style={styles.page}>
       {/* 상단 히어로 */}
-      <div style={styles.hero}>
+      <div style={{
+        ...styles.hero,
+        backgroundImage: COMPANY_BG[article.company] ? `url(${COMPANY_BG[article.company]})` : 'none',
+        backgroundColor: '#1a1a2e',
+      }}>
+        <div style={styles.heroOverlay} />
         <div style={styles.heroInner}>
           <div style={styles.topBar}>
             <button style={styles.back} className="hover-btn" onClick={() => navigate(-1)}>← 뒤로</button>
@@ -162,11 +172,19 @@ const styles = {
 
   // 히어로
   hero: {
-    background: 'linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 60%, #16213e 100%)',
+    position: 'relative',
     padding: '2rem 2rem 2.5rem',
     color: '#fff',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  },
+  heroOverlay: {
+    position: 'absolute',
+    inset: 0,
+    background: 'linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.7) 100%)',
   },
   heroInner: {
+    position: 'relative',
     maxWidth: '760px',
     margin: '0 auto',
   },
