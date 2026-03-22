@@ -22,6 +22,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.pipeline.txt
 
+      - name: Debug
+        run: |
+          git log -1 --oneline
+          head -70 pipeline/classify_and_summarize.py
+
       - name: Run pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
