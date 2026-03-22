@@ -22,6 +22,14 @@ HF_REPO_ID = "SSEUNGSSEUNGWOO/newszips-classifier"
 BERT_MODEL_DIR = "models/klue_bert_classifier"
 TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
+LABEL_ENG = {
+    "IT_과학": "IT",
+    "경제": "economy",
+    "사회": "society",
+    "스포츠": "sports",
+    "연예": "entertainment",
+    "정치": "politics",
+}
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
 
@@ -54,19 +62,23 @@ def load_models():
         from huggingface_hub import hf_hub_download
         import tempfile
         tfidf_dir = tempfile.mkdtemp()
-        for label in LABELS:
-            path = hf_hub_download(
+        for label, eng in LABEL_ENG.items():
+            hf_hub_download(
                 repo_id=HF_REPO_ID,
-                filename=f"tfidf_vectorizers/tfidf_{label}.pkl",
+                filename=f"tfidf_vectorizers/tfidf_{eng}.pkl",
                 token=hf_token,
                 local_dir=tfidf_dir
             )
         tfidf_src = os.path.join(tfidf_dir, "tfidf_vectorizers")
-
-    vectorizers = {
-        label: joblib.load(os.path.join(tfidf_src, f"tfidf_{label}.pkl"))
-        for label in LABELS
-    }
+        vectorizers = {
+            label: joblib.load(os.path.join(tfidf_src, f"tfidf_{LABEL_ENG[label]}.pkl"))
+            for label in LABELS
+        }
+    else:
+        vectorizers = {
+            label: joblib.load(os.path.join(tfidf_src, f"tfidf_{label}.pkl"))
+            for label in LABELS
+        }
 
     return tokenizer, bert_model, vectorizers, device
 
