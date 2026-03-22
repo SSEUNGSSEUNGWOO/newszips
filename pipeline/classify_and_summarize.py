@@ -25,12 +25,31 @@ TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
 
 def ensure_models():
     """모델이 없으면 HuggingFace에서 다운로드"""
-    from huggingface_hub import snapshot_download
-    if not os.path.exists(BERT_MODEL_DIR) or not os.path.exists(TFIDF_MODEL_DIR):
+    from huggingface_hub import hf_hub_download, list_repo_files
+    import shutil
+
+    hf_token = os.getenv("HF_TOKEN")
+    model_file = os.path.join(BERT_MODEL_DIR, "config.json")
+
+    if not os.path.exists(model_file):
         print("모델 다운로드 중 (HuggingFace)...")
-        hf_token = os.getenv("HF_TOKEN")
-        snapshot_download(repo_id=HF_REPO_ID, local_dir="models", token=hf_token)
+        os.makedirs(BERT_MODEL_DIR, exist_ok=True)
+        os.makedirs(TFIDF_MODEL_DIR, exist_ok=True)
+
+        for filename in list_repo_files(HF_REPO_ID, token=hf_token):
+            local_path = os.path.join("models", filename)
+            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=filename,
+                local_dir="models",
+                token=hf_token
+            )
+            print(f"  다운로드: {filename}")
+
         print(f"다운로드 완료! BERT: {os.path.exists(BERT_MODEL_DIR)}, TF-IDF: {os.path.exists(TFIDF_MODEL_DIR)}")
+    else:
+        print("모델 이미 존재함, 다운로드 생략")
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
