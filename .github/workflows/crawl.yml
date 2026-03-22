@@ -26,13 +26,20 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          huggingface-cli download SSEUNGSSEUNGWOO/newszips-classifier \
-            --local-dir models \
-            --token $HF_TOKEN
+          python - <<'EOF'
+          import os
+          from huggingface_hub import snapshot_download
+          snapshot_download(
+              repo_id="SSEUNGSSEUNGWOO/newszips-classifier",
+              local_dir="models",
+              local_dir_use_symlinks=False,
+              token=os.environ["HF_TOKEN"]
+          )
+          EOF
           echo "=== models 디렉토리 ==="
-          ls models/
+          ls -la models/
           echo "=== BERT 모델 ==="
-          ls models/klue_bert_classifier/
+          ls -la models/klue_bert_classifier/
 
       - name: Run pipeline
         env:
