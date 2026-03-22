@@ -2,7 +2,7 @@ name: Hourly Crawl & Summarize
 
 on:
   schedule:
-    - cron: '0 * * * *'  # 매 시간 정각
+    - cron: '0 9 * * *'  # 매일 오전 9시 (UTC 기준, 한국 오후 6시)
   workflow_dispatch:       # 수동 실행 버튼
 
 jobs:
