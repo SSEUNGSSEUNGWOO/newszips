@@ -18,8 +18,18 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
+HF_REPO_ID = "SSEUNGSSEUNGWOO/newszips-classifier"
 BERT_MODEL_DIR = "models/klue_bert_classifier"
 TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
+
+
+def ensure_models():
+    """모델이 없으면 HuggingFace에서 다운로드"""
+    from huggingface_hub import snapshot_download
+    if not os.path.exists(BERT_MODEL_DIR) or not os.path.exists(TFIDF_MODEL_DIR):
+        print("모델 다운로드 중 (HuggingFace)...")
+        snapshot_download(repo_id=HF_REPO_ID, local_dir="models")
+        print("다운로드 완료!")
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
@@ -105,6 +115,7 @@ def summarize(title, text, topic, keywords):
 
 
 def run():
+    ensure_models()
     print("모델 로딩...")
     tokenizer, bert_model, vectorizers, device = load_models()
 
