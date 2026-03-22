@@ -2,6 +2,11 @@
 
 유튜브 뉴스 영상을 크롤링해서 카테고리 분류 → 핵심어 추출 → AI 요약까지 자동화하고, React 앱으로 서비스하는 풀스택 프로젝트.
 
+**라이브 서비스**: https://newszips.vercel.app
+**백엔드 API**: https://perpetual-kindness-production.up.railway.app
+
+---
+
 ## 왜 이런 구조인가?
 
 LLM에 기사 본문을 그대로 넘겨 요약을 요청하면, 모델이 스스로 중요하다고 판단한 내용을 요약한다. 이 경우 같은 사건을 다룬 기사라도 요약이 매번 달라지고, 핵심 사실보다 문체나 도입부에 끌려가는 경향이 있다.
@@ -42,6 +47,7 @@ t-SNE → 2D 좌표 계산 → Supabase x, y 저장
 - 학습: `classifier/train_bert_colab.ipynb` (Colab, GPU)
 - 정확도: 96% (6개 카테고리)
 - 임계치: 확신도 50% 미만이면 "기타"로 분류
+- 배포: HuggingFace Hub (`SSEUNGSSEUNGWOO/newszips-classifier`)
 
 ### TF-IDF (`models/tfidf_vectorizers/tfidf_{카테고리}.pkl` × 6개)
 - 역할: **핵심어 추출 전용**
@@ -54,7 +60,8 @@ t-SNE → 2D 좌표 계산 → Supabase x, y 저장
 ## 크롤러 동작 방식
 
 - 대상 채널: KBS, SBS, YTN
-- 주기: 1시간마다 (배포 기준), 채널당 최대 20개
+- 자동 실행: 매일 한국시간 오후 6시 (GitHub Actions)
+- 채널당 최대 20개
 - 필터 조건:
   - 영상 길이 60초~5분 (Shorts 및 장편 제외)
   - 한글 비율 30% 이상 (새벽 영어 뉴스 등 제외)
@@ -80,11 +87,30 @@ v2에서 사회 카테고리 추가 → 기존에 사회 기사가 다른 카테
 
 ## 프론트엔드 주요 기능
 
-- **언론사 선택** (KBS / SBS / YTN) → 기사 리스트
-- **카테고리 필터** (IT_과학 / 경제 / 사회 / 스포츠 / 연예 / 정치 / 기타)
+- **언론사 선택** (KBS / SBS / YTN) → 기사 그리드 리스트
+- **카테고리 필터** — 상단 고정 탭, 수평 스크롤
 - **최근 트렌드** — 최근 48시간 기사 키워드 빈도 집계, 클릭 시 해당 키워드 기사 목록
 - **기사 상세** — YouTube 썸네일 클릭 시 영상 재생, AI 요약 + 핵심어 하이라이트, 유사 기사 추천
 - **Dev Tools** (`/dev/:id`) — BERT 분류 신뢰도 / t-SNE 위치 / 유사도 거리 / 전체 통계
+- **t-SNE 시각화** (`/tsne`) — 전체 기사 2D 임베딩 시각화, 특정 기사 하이라이트 지원
+
+---
+
+## 배포 구조
+
+```
+사용자 브라우저
+    ↓ 접속
+Vercel (React 프론트엔드)
+    ↓ API 요청
+Railway (FastAPI 백엔드)
+    ↓ DB 조회
+Supabase (PostgreSQL)
+```
+
+- **프론트엔드** (Vercel): https://newszips.vercel.app
+- **백엔드** (Railway): https://perpetual-kindness-production.up.railway.app
+- **자동 크롤링**: GitHub Actions — 매일 오후 6시 (KST) 자동 실행, 로컬 환경 불필요
 
 ---
 
@@ -105,7 +131,7 @@ crawler/
   youtube_crawler.py         # 유튜브 크롤링 (KBS, SBS, YTN)
 
 models/
-  klue_bert_classifier/      # BERT 분류 모델
+  klue_bert_classifier/      # BERT 분류 모델 (HuggingFace에도 업로드됨)
   tfidf_vectorizers/         # 카테고리별 TF-IDF vectorizer (6개)
 
 api/
@@ -114,16 +140,19 @@ api/
     GET /articles/:id        # 기사 상세
     GET /articles/:id/related  # 유사 기사 (유클리드 거리)
     GET /tsne                # t-SNE 좌표 전체
-    GET /trends              # 최근 키워드 빈도
+    GET /trends              # 최근 48시간 키워드 빈도
     GET /stats               # 전체 통계
 
 frontend/
   src/pages/
     SelectCompany.js         # 언론사 선택 + 트렌드 키워드
-    ArticleList.js           # 기사 그리드 리스트
-    ArticleDetail.js         # 기사 상세 + 영상 재생
+    ArticleList.js           # 기사 카드 그리드
+    ArticleDetail.js         # 기사 상세 + 영상 재생 + 핵심어 하이라이트
     DevPage.js               # 개발자 도구 (분류신뢰도 / t-SNE / 유사도 / 통계)
     TsnePage.js              # t-SNE 시각화
+
+.github/workflows/
+  crawl.yml                  # GitHub Actions — 매일 자동 크롤링+요약
 
 data/
   train_data.json            # BERT 학습 데이터
@@ -138,17 +167,13 @@ data/
 | 분류 | klue/bert-base fine-tuned |
 | 핵심어 추출 | 카테고리별 TF-IDF |
 | 요약 | OpenAI gpt-4o-mini |
+| 시각화 | t-SNE + Plotly |
 | DB | Supabase (PostgreSQL) |
 | 백엔드 | FastAPI → Railway 배포 |
 | 프론트엔드 | React → Vercel 배포 |
-| 크롤링 자동화 | Railway cron job (1시간 주기) |
+| 자동화 | GitHub Actions (매일 오후 6시 KST) |
 
 ---
-
-## 배포
-
-- **백엔드** (Railway): FastAPI 서버, 1시간마다 파이프라인 자동 실행
-- **프론트엔드** (Vercel): React 앱, `REACT_APP_API_URL` 환경변수로 API 연결
 
 ## 환경변수 (.env)
 
@@ -158,3 +183,5 @@ SUPABASE_KEY=
 OPENAI_API_KEY=
 YOUTUBE_API_KEY=
 ```
+
+GitHub Actions Secrets에도 동일하게 설정 필요 (`HF_TOKEN` 추가).
