@@ -37,15 +37,16 @@ CONFIDENCE_THRESHOLD = 0.5
 def load_models():
     hf_token = os.getenv("HF_TOKEN")
 
-    # 로컬 모델이 있으면 로컬에서, 없으면 HuggingFace에서 직접 로드
-    if os.path.isdir(BERT_MODEL_DIR):
-        bert_src = BERT_MODEL_DIR
-        tfidf_src = TFIDF_MODEL_DIR
-        print("로컬 모델 사용")
-    else:
+    # HF_TOKEN 있으면 HuggingFace에서, 없으면 로컬에서
+    use_hf = bool(hf_token) and not os.path.isdir(BERT_MODEL_DIR)
+    if use_hf:
         bert_src = HF_REPO_ID
         tfidf_src = None
         print("HuggingFace에서 모델 로드 중...")
+    else:
+        bert_src = BERT_MODEL_DIR
+        tfidf_src = TFIDF_MODEL_DIR
+        print("로컬 모델 사용")
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     tokenizer = AutoTokenizer.from_pretrained(
