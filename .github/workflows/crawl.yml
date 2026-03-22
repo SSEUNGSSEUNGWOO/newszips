@@ -1,0 +1,31 @@
+name: Hourly Crawl & Summarize
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 매 시간 정각
+  workflow_dispatch:       # 수동 실행 버튼
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.pipeline.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.pipeline.txt
+
+      - name: Run pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: python pipeline/run_pipeline.py
