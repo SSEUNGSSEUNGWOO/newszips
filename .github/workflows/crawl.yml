@@ -22,36 +22,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.pipeline.txt
 
-      - name: Download models from HuggingFace
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python - <<'EOF'
-          import os
-          from huggingface_hub import snapshot_download
-          snapshot_download(
-              repo_id="SSEUNGSSEUNGWOO/newszips-classifier",
-              local_dir="models",
-              local_dir_use_symlinks=False,
-              token=os.environ["HF_TOKEN"]
-          )
-          EOF
-          echo "=== models 디렉토리 ==="
-          ls -la models/
-          echo "=== BERT 모델 ==="
-          ls -la models/klue_bert_classifier/
-
       - name: Run pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        run: |
-          echo "=== pwd ==="
-          pwd
-          echo "=== models/ ==="
-          ls -la models/ || echo "models 없음"
-          echo "=== models/klue_bert_classifier/ ==="
-          ls models/klue_bert_classifier/ || echo "klue_bert_classifier 없음"
-          python pipeline/run_pipeline.py
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python pipeline/run_pipeline.py

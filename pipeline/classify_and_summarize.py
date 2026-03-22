@@ -21,42 +21,50 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 HF_REPO_ID = "SSEUNGSSEUNGWOO/newszips-classifier"
 BERT_MODEL_DIR = "models/klue_bert_classifier"
 TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
-
-
-def ensure_models():
-    """모델이 없으면 HuggingFace에서 다운로드"""
-    from huggingface_hub import snapshot_download
-
-    hf_token = os.getenv("HF_TOKEN")
-    model_file = os.path.join(BERT_MODEL_DIR, "config.json")
-
-    if not os.path.exists(model_file):
-        print("모델 다운로드 중 (HuggingFace)...")
-        snapshot_download(
-            repo_id=HF_REPO_ID,
-            local_dir="models",
-            local_dir_use_symlinks=False,
-            token=hf_token
-        )
-        print(f"다운로드 완료! BERT: {os.path.exists(BERT_MODEL_DIR)}, TF-IDF: {os.path.exists(TFIDF_MODEL_DIR)}")
-    else:
-        print("모델 이미 존재함, 다운로드 생략")
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
 
 
 def load_models():
-    # BERT
+    hf_token = os.getenv("HF_TOKEN")
+
+    # 로컬 모델이 있으면 로컬에서, 없으면 HuggingFace에서 직접 로드
+    if os.path.isdir(BERT_MODEL_DIR):
+        bert_src = BERT_MODEL_DIR
+        tfidf_src = TFIDF_MODEL_DIR
+        print("로컬 모델 사용")
+    else:
+        bert_src = HF_REPO_ID
+        tfidf_src = None
+        print("HuggingFace에서 모델 로드 중...")
+
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_DIR)
-    bert_model = AutoModelForSequenceClassification.from_pretrained(BERT_MODEL_DIR)
+    tokenizer = AutoTokenizer.from_pretrained(
+        bert_src, subfolder="klue_bert_classifier" if bert_src == HF_REPO_ID else None, token=hf_token
+    )
+    bert_model = AutoModelForSequenceClassification.from_pretrained(
+        bert_src, subfolder="klue_bert_classifier" if bert_src == HF_REPO_ID else None, token=hf_token
+    )
     bert_model.to(device)
     bert_model.eval()
 
-    # 카테고리별 TF-IDF vectorizer
+    # TF-IDF: 로컬 or HuggingFace에서 다운로드
+    if tfidf_src is None:
+        from huggingface_hub import hf_hub_download
+        import tempfile
+        tfidf_dir = tempfile.mkdtemp()
+        for label in LABELS:
+            path = hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=f"tfidf_vectorizers/tfidf_{label}.pkl",
+                token=hf_token,
+                local_dir=tfidf_dir
+            )
+        tfidf_src = os.path.join(tfidf_dir, "tfidf_vectorizers")
+
     vectorizers = {
-        label: joblib.load(os.path.join(TFIDF_MODEL_DIR, f"tfidf_{label}.pkl"))
+        label: joblib.load(os.path.join(tfidf_src, f"tfidf_{label}.pkl"))
         for label in LABELS
     }
 
@@ -126,7 +134,6 @@ def summarize(title, text, topic, keywords):
 
 
 def run():
-    ensure_models()
     print("모델 로딩...")
     tokenizer, bert_model, vectorizers, device = load_models()
 
