@@ -37,49 +37,27 @@ CONFIDENCE_THRESHOLD = 0.5
 def load_models():
     hf_token = os.getenv("HF_TOKEN")
 
-    # HF_TOKEN 있으면 HuggingFace에서, 없으면 로컬에서
-    use_hf = bool(hf_token) and not os.path.isdir(BERT_MODEL_DIR)
-    if use_hf:
-        bert_src = HF_REPO_ID
-        tfidf_src = None
-        print("HuggingFace에서 모델 로드 중...")
-    else:
+    # BERT: 로컬 없으면 HuggingFace에서 로드
+    if os.path.isdir(BERT_MODEL_DIR):
+        print("로컬 BERT 모델 사용")
         bert_src = BERT_MODEL_DIR
-        tfidf_src = TFIDF_MODEL_DIR
-        print("로컬 모델 사용")
+        bert_kwargs = {}
+    else:
+        print("HuggingFace에서 BERT 로드 중...")
+        bert_src = HF_REPO_ID
+        bert_kwargs = {"subfolder": "klue_bert_classifier", "token": hf_token}
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(
-        bert_src, subfolder="klue_bert_classifier" if bert_src == HF_REPO_ID else None, token=hf_token
-    )
-    bert_model = AutoModelForSequenceClassification.from_pretrained(
-        bert_src, subfolder="klue_bert_classifier" if bert_src == HF_REPO_ID else None, token=hf_token
-    )
+    tokenizer = AutoTokenizer.from_pretrained(bert_src, **bert_kwargs)
+    bert_model = AutoModelForSequenceClassification.from_pretrained(bert_src, **bert_kwargs)
     bert_model.to(device)
     bert_model.eval()
 
-    # TF-IDF: 로컬 or HuggingFace에서 다운로드
-    if tfidf_src is None:
-        from huggingface_hub import hf_hub_download
-        import tempfile
-        tfidf_dir = tempfile.mkdtemp()
-        for label, eng in LABEL_ENG.items():
-            hf_hub_download(
-                repo_id=HF_REPO_ID,
-                filename=f"tfidf_vectorizers/tfidf_{eng}.pkl",
-                token=hf_token,
-                local_dir=tfidf_dir
-            )
-        tfidf_src = os.path.join(tfidf_dir, "tfidf_vectorizers")
-        vectorizers = {
-            label: joblib.load(os.path.join(tfidf_src, f"tfidf_{LABEL_ENG[label]}.pkl"))
-            for label in LABELS
-        }
-    else:
-        vectorizers = {
-            label: joblib.load(os.path.join(tfidf_src, f"tfidf_{label}.pkl"))
-            for label in LABELS
-        }
+    # TF-IDF: 항상 로컬(git에 포함)
+    vectorizers = {
+        label: joblib.load(os.path.join(TFIDF_MODEL_DIR, f"tfidf_{label}.pkl"))
+        for label in LABELS
+    }
 
     return tokenizer, bert_model, vectorizers, device
 
