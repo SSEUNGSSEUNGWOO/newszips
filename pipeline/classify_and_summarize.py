@@ -28,8 +28,9 @@ def ensure_models():
     from huggingface_hub import snapshot_download
     if not os.path.exists(BERT_MODEL_DIR) or not os.path.exists(TFIDF_MODEL_DIR):
         print("모델 다운로드 중 (HuggingFace)...")
-        snapshot_download(repo_id=HF_REPO_ID, local_dir="models")
-        print("다운로드 완료!")
+        hf_token = os.getenv("HF_TOKEN")
+        snapshot_download(repo_id=HF_REPO_ID, local_dir="models", token=hf_token)
+        print(f"다운로드 완료! BERT: {os.path.exists(BERT_MODEL_DIR)}, TF-IDF: {os.path.exists(TFIDF_MODEL_DIR)}")
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
