@@ -37,19 +37,24 @@ CONFIDENCE_THRESHOLD = 0.5
 def load_models():
     hf_token = os.getenv("HF_TOKEN")
 
-    # BERT: 로컬 없으면 HuggingFace에서 로드
-    if os.path.isdir(BERT_MODEL_DIR):
-        print("로컬 BERT 모델 사용")
-        bert_src = BERT_MODEL_DIR
-        bert_kwargs = {}
-    else:
+    # BERT: 로컬 없으면 HuggingFace에서 BERT 파일만 골라서 다운로드
+    if not os.path.isdir(BERT_MODEL_DIR):
         print("HuggingFace에서 BERT 로드 중...")
-        bert_src = HF_REPO_ID
-        bert_kwargs = {"subfolder": "klue_bert_classifier", "token": hf_token}
+        from huggingface_hub import snapshot_download
+        snapshot_download(
+            repo_id=HF_REPO_ID,
+            local_dir="models",
+            allow_patterns=["klue_bert_classifier/*"],
+            local_dir_use_symlinks=False,
+            token=hf_token
+        )
+        print("BERT 다운로드 완료")
+    else:
+        print("로컬 BERT 모델 사용")
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(bert_src, **bert_kwargs)
-    bert_model = AutoModelForSequenceClassification.from_pretrained(bert_src, **bert_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_DIR)
+    bert_model = AutoModelForSequenceClassification.from_pretrained(BERT_MODEL_DIR)
     bert_model.to(device)
     bert_model.eval()
 
