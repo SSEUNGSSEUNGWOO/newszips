@@ -2,13 +2,5 @@ fastapi
 uvicorn[standard]
 python-dotenv
 supabase
-google-api-python-client
-isodate
-scikit-learn==1.6.1
-transformers
-torch
-openai
 numpy
-joblib
-tqdm
 httpx
