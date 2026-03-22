@@ -25,10 +25,17 @@ function SelectCompany() {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(null);
   const [trends, setTrends] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     axios.get(`${API}/trends`).then((res) => setTrends(res.data));
   }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (q) navigate(`/articles?q=${encodeURIComponent(q)}`);
+  };
 
   return (
     <div style={styles.page}>
@@ -49,6 +56,18 @@ function SelectCompany() {
               ))}
             </div>
           </div>
+
+          {/* 검색창 */}
+          <form onSubmit={handleSearch} style={styles.searchForm}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="뉴스 검색..."
+              style={styles.searchInput}
+            />
+            <button type="submit" style={styles.searchBtn}>검색</button>
+          </form>
         </div>
       </div>
 
@@ -176,6 +195,37 @@ const styles = {
     background: '#FF8C42',
     borderRadius: '20px',
     padding: '0.3rem 0.8rem',
+  },
+
+  // 검색창
+  searchForm: {
+    display: 'flex',
+    gap: '0.5rem',
+    width: '100%',
+    maxWidth: '480px',
+    margin: '0 auto',
+  },
+  searchInput: {
+    flex: 1,
+    padding: '0.75rem 1.1rem',
+    fontSize: '0.95rem',
+    border: '1.5px solid rgba(255,255,255,0.2)',
+    borderRadius: '50px',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    outline: 'none',
+    backdropFilter: 'blur(4px)',
+  },
+  searchBtn: {
+    padding: '0.75rem 1.4rem',
+    fontSize: '0.9rem',
+    fontWeight: '700',
+    background: '#fff',
+    color: '#1a1a2e',
+    border: 'none',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
 
   // 언론사 선택

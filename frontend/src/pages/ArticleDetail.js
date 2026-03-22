@@ -42,6 +42,7 @@ function ArticleDetail() {
   const [article, setArticle] = useState(null);
   const [related, setRelated] = useState([]);
   const [playing, setPlaying] = useState(false);
+  const [selectionPopup, setSelectionPopup] = useState(null); // { word, x, y }
 
   useEffect(() => {
     axios.get(`${API}/articles/${id}`).then((res) => setArticle(res.data));
@@ -50,10 +51,49 @@ function ArticleDetail() {
     window.scrollTo(0, 0);
   }, [id]);
 
+  useEffect(() => {
+    const handleMouseUp = (e) => {
+      const selected = window.getSelection()?.toString().trim();
+      if (selected && selected.length > 1 && selected.length < 30) {
+        setSelectionPopup({ word: selected, x: e.clientX, y: e.clientY });
+      } else {
+        setSelectionPopup(null);
+      }
+    };
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
   if (!article) return <div style={styles.loading}>로딩 중...</div>;
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} onClick={() => setSelectionPopup(null)}>
+      {/* 단어 검색 팝업 */}
+      {selectionPopup && (
+        <div style={{
+          ...styles.selectionPopup,
+          left: selectionPopup.x,
+          top: selectionPopup.y + 12,
+        }}>
+          <span style={styles.selectionWord}>"{selectionPopup.word}"</span>
+          <a
+            href={`https://dict.naver.com/search.nhn?query=${encodeURIComponent(selectionPopup.word)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.selectionLink}
+          >
+            네이버 사전
+          </a>
+          <a
+            href={`https://www.google.com/search?q=${encodeURIComponent(selectionPopup.word)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...styles.selectionLink, background: '#4285f4' }}
+          >
+            구글 검색
+          </a>
+        </div>
+      )}
       {/* 상단 히어로 */}
       <div style={{
         ...styles.hero,
@@ -359,6 +399,39 @@ const styles = {
     fontSize: '1rem',
     lineHeight: 1.9,
     color: '#333',
+  },
+
+  // 단어 검색 팝업
+  selectionPopup: {
+    position: 'fixed',
+    zIndex: 1000,
+    background: '#1a1a2e',
+    borderRadius: '10px',
+    padding: '0.5rem 0.7rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+    transform: 'translateX(-50%)',
+    pointerEvents: 'auto',
+  },
+  selectionWord: {
+    fontSize: '0.78rem',
+    color: 'rgba(255,255,255,0.5)',
+    maxWidth: '120px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  selectionLink: {
+    fontSize: '0.78rem',
+    fontWeight: '700',
+    color: '#fff',
+    background: '#03c75a',
+    padding: '0.3rem 0.7rem',
+    borderRadius: '6px',
+    textDecoration: 'none',
+    whiteSpace: 'nowrap',
   },
 
   // 유사 기사

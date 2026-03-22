@@ -25,6 +25,7 @@ def get_articles(
     company: str = Query(None, description="언론사 (kbs, sbs, ytn)"),
     category: str = Query(None, description="카테고리"),
     keyword: str = Query(None, description="키워드 필터"),
+    q: str = Query(None, description="텍스트 검색 (제목/요약)"),
     limit: int = Query(50, description="최대 기사 수"),
 ):
     """언론사/카테고리별 기사 목록"""
@@ -38,6 +39,8 @@ def get_articles(
         query = query.eq("topic", category)
     if keyword:
         query = query.contains("keywords", [keyword])
+    if q:
+        query = query.or_(f"title.ilike.%{q}%,summary.ilike.%{q}%")
 
     result = query.order("upload_date", desc=True).limit(limit).execute()
     return result.data

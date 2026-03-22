@@ -33,18 +33,20 @@ function ArticleList() {
   const [searchParams] = useSearchParams();
   const company = searchParams.get('company');
   const keyword = searchParams.get('keyword');
+  const q = searchParams.get('q');
   const navigate = useNavigate();
 
   useEffect(() => {
     const params = {};
     if (company) params.company = company;
     if (keyword) params.keyword = keyword;
+    if (q) params.q = q;
     if (category !== '전체') params.category = category;
 
     axios.get(`${API}/articles`, { params }).then((res) => {
       setArticles(res.data);
     });
-  }, [company, keyword, category]);
+  }, [company, keyword, q, category]);
 
   const accentColor = COMPANY_COLORS[company] || '#222';
 
@@ -63,12 +65,14 @@ function ArticleList() {
           <button style={styles.back} className="hover-btn" onClick={() => navigate('/')}>← 뒤로</button>
           <div style={styles.heroRow}>
             <div>
-              <p style={styles.heroEyebrow}>{keyword ? '트렌드 키워드' : '채널'}</p>
+              <p style={styles.heroEyebrow}>
+                {q ? '검색 결과' : keyword ? '트렌드 키워드' : '채널'}
+              </p>
               <h1 style={styles.heroTitle}>
-                {keyword ? `#${keyword}` : `${company?.toUpperCase()} 뉴스`}
+                {q ? `"${q}"` : keyword ? `#${keyword}` : `${company?.toUpperCase()} 뉴스`}
               </h1>
               <p style={styles.heroCount}>
-                {articles.length > 0 ? `기사 ${articles.length}개` : ''}
+                {articles.length > 0 ? `기사 ${articles.length}개` : '결과 없음'}
               </p>
             </div>
           </div>
@@ -77,7 +81,7 @@ function ArticleList() {
       </div>
 
       {/* 카테고리 바 */}
-      {!keyword && (
+      {!keyword && !q && (
         <div style={styles.categoryBar}>
           <div style={styles.categoryScroll}>
             {CATEGORIES.map((c) => (
