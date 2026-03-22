@@ -22,11 +22,35 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.pipeline.txt
 
+      - name: Cache models
+        id: cache-models
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: hf-models-v1
+
+      - name: Download models from HuggingFace
+        if: steps.cache-models.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import snapshot_download
+          import os
+          snapshot_download(
+              repo_id="SSEUNGSSEUNGWOO/newszips-classifier",
+              local_dir="models",
+              local_dir_use_symlinks=False,
+              token=os.environ["HF_TOKEN"]
+          )
+          print("Download complete!")
+          print(os.listdir("models"))
+          EOF
+
       - name: Run pipeline
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python pipeline/run_pipeline.py
