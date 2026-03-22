@@ -22,14 +22,6 @@ HF_REPO_ID = "SSEUNGSSEUNGWOO/newszips-classifier"
 BERT_MODEL_DIR = "models/klue_bert_classifier"
 TFIDF_MODEL_DIR = "models/tfidf_vectorizers"
 LABELS = ["IT_과학", "경제", "사회", "스포츠", "연예", "정치"]
-LABEL_ENG = {
-    "IT_과학": "IT",
-    "경제": "economy",
-    "사회": "society",
-    "스포츠": "sports",
-    "연예": "entertainment",
-    "정치": "politics",
-}
 TOP_K_KEYWORDS = 5
 CONFIDENCE_THRESHOLD = 0.5
 

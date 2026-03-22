@@ -29,10 +29,4 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          git log -1 --oneline
-          echo "=== classify_and_summarize.py line 50-70 ==="
-          sed -n '50,70p' pipeline/classify_and_summarize.py
-          echo "=== tfidf files ==="
-          ls models/tfidf_vectorizers/ || echo "없음"
-          python pipeline/run_pipeline.py
+        run: python pipeline/run_pipeline.py
