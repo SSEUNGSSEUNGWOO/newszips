@@ -49,6 +49,16 @@ def run():
     texts = [r["transcript"] for r in rows]
     print(f"총 {len(texts)}개 기사 임베딩 추출 중...")
 
+    if not os.path.isdir(BERT_MODEL_DIR):
+        from huggingface_hub import hf_hub_download
+        hf_token = os.getenv("HF_TOKEN")
+        hf_repo = "SSEUNGSSEUNGWOO/newszips-classifier"
+        bert_files = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
+        os.makedirs(BERT_MODEL_DIR, exist_ok=True)
+        for f in bert_files:
+            hf_hub_download(repo_id=hf_repo, filename=f"klue_bert_classifier/{f}",
+                            local_dir="models", local_dir_use_symlinks=False, token=hf_token)
+
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     tokenizer = AutoTokenizer.from_pretrained(BERT_MODEL_DIR)
     model = AutoModelForSequenceClassification.from_pretrained(BERT_MODEL_DIR)

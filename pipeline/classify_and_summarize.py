@@ -37,17 +37,20 @@ CONFIDENCE_THRESHOLD = 0.5
 def load_models():
     hf_token = os.getenv("HF_TOKEN")
 
-    # BERT: 로컬 없으면 HuggingFace에서 BERT 파일만 골라서 다운로드
+    # BERT: 로컬 없으면 HuggingFace에서 파일별로 다운로드
     if not os.path.isdir(BERT_MODEL_DIR):
-        print("HuggingFace에서 BERT 로드 중...")
-        from huggingface_hub import snapshot_download
-        snapshot_download(
-            repo_id=HF_REPO_ID,
-            local_dir="models",
-            allow_patterns=["klue_bert_classifier/*"],
-            local_dir_use_symlinks=False,
-            token=hf_token
-        )
+        print("HuggingFace에서 BERT 다운로드 중...")
+        from huggingface_hub import hf_hub_download
+        bert_files = ["config.json", "model.safetensors", "tokenizer.json", "tokenizer_config.json"]
+        os.makedirs(BERT_MODEL_DIR, exist_ok=True)
+        for f in bert_files:
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=f"klue_bert_classifier/{f}",
+                local_dir="models",
+                local_dir_use_symlinks=False,
+                token=hf_token
+            )
         print("BERT 다운로드 완료")
     else:
         print("로컬 BERT 모델 사용")
