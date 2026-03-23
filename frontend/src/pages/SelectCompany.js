@@ -161,7 +161,7 @@ const styles = {
   },
   heroInner: {
     position: 'relative',
-    maxWidth: '600px',
+    maxWidth: '900px',
     margin: '0 auto',
   },
   logoCard: {
@@ -202,7 +202,7 @@ const styles = {
     display: 'flex',
     gap: '0.5rem',
     width: '100%',
-    maxWidth: '480px',
+    maxWidth: '600px',
     margin: '0 auto',
   },
   searchInput: {
@@ -253,8 +253,8 @@ const styles = {
   },
   card: {
     position: 'relative',
-    width: '180px',
-    height: '180px',
+    width: 'clamp(140px, 18vw, 220px)',
+    height: 'clamp(140px, 18vw, 220px)',
     borderRadius: '20px',
     cursor: 'pointer',
     transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -296,7 +296,7 @@ const styles = {
   },
   trends: {
     width: '100%',
-    maxWidth: '680px',
+    maxWidth: '900px',
     background: '#fff',
     borderRadius: '16px',
     padding: '1.2rem 1.5rem',

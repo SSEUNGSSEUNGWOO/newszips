@@ -105,7 +105,7 @@ function ArticleList() {
         {articles.length === 0 ? (
           <p style={styles.empty}>기사가 없습니다.</p>
         ) : (
-          <div style={styles.grid}>
+          <div style={styles.grid} className="responsive-grid">
             {articles.map((a) => (
               <div
                 key={a.id}
@@ -157,7 +157,7 @@ const styles = {
   },
   heroInner: {
     position: 'relative',
-    maxWidth: '760px',
+    maxWidth: '1200px',
     margin: '0 auto',
   },
   back: {
@@ -227,7 +227,7 @@ const styles = {
     gap: '0.5rem',
     overflowX: 'auto',
     padding: '0.8rem 1.5rem',
-    maxWidth: '900px',
+    maxWidth: '1200px',
     margin: '0 auto',
     scrollbarWidth: 'none',
     msOverflowStyle: 'none',
@@ -251,7 +251,7 @@ const styles = {
     fontWeight: '700',
   },
   body: {
-    maxWidth: '900px',
+    maxWidth: '1200px',
     margin: '0 auto',
     padding: '1.4rem 1.5rem 4rem',
   },

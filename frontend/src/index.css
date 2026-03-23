@@ -12,6 +12,35 @@ code {
     monospace;
 }
 
+/* 반응형 */
+@media (max-width: 600px) {
+  .responsive-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 0.75rem !important;
+  }
+  .responsive-padding {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .company-cards {
+    gap: 0.75rem !important;
+  }
+  .company-card {
+    width: 140px !important;
+    height: 140px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  }
+  .company-card {
+    width: 220px !important;
+    height: 220px !important;
+  }
+}
+
 /* 호버 인터랙션 */
 .hover-lift {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
