@@ -30,6 +30,7 @@ const TOPIC_COLORS = {
 function ArticleList() {
   const [articles, setArticles] = useState([]);
   const [category, setCategory] = useState('전체');
+  const [hoveredId, setHoveredId] = useState(null);
   const [searchParams] = useSearchParams();
   const company = searchParams.get('company');
   const keyword = searchParams.get('keyword');
@@ -110,8 +111,9 @@ function ArticleList() {
               <div
                 key={a.id}
                 style={styles.card}
-                className="hover-lift"
                 onClick={() => navigate(`/articles/${a.id}`)}
+                onMouseEnter={() => setHoveredId(a.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
                 <div style={styles.thumbWrap}>
                   <img
@@ -123,11 +125,25 @@ function ArticleList() {
                     {a.topic}
                   </span>
                 </div>
-                <div style={styles.cardContent}>
-                  <p style={styles.cardTitle}>{a.title}</p>
+                <div style={{
+                  ...styles.cardContent,
+                  backgroundColor: hoveredId === a.id ? accentColor : '#fff',
+                  transition: 'background-color 0.2s ease',
+                }}>
+                  <p style={{
+                    ...styles.cardTitle,
+                    color: hoveredId === a.id ? '#fff' : '#1a1a2e',
+                  }}>{a.title}</p>
                   <div style={styles.cardMeta}>
-                    <span style={{ ...styles.companyBadge, color: accentColor, borderColor: accentColor }}>{a.company?.toUpperCase()}</span>
-                    <span style={styles.date}>{a.upload_date?.slice(0, 10)}</span>
+                    <span style={{
+                      ...styles.companyBadge,
+                      color: hoveredId === a.id ? '#fff' : accentColor,
+                      borderColor: hoveredId === a.id ? '#fff' : accentColor,
+                    }}>{a.company?.toUpperCase()}</span>
+                    <span style={{
+                      ...styles.date,
+                      color: hoveredId === a.id ? 'rgba(255,255,255,0.7)' : '#bbb',
+                    }}>{a.upload_date?.slice(0, 10)}</span>
                   </div>
                 </div>
               </div>
