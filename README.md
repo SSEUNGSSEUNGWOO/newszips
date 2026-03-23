@@ -60,7 +60,7 @@ t-SNE → 2D 좌표 계산 → Supabase x, y 저장
 ## 크롤러 동작 방식
 
 - 대상 채널: KBS, SBS, YTN
-- 자동 실행: 매일 한국시간 오후 6시 (GitHub Actions)
+- 자동 실행: 매일 한국시간 오전 6시 (GitHub Actions)
 - 채널당 최대 20개
 - 필터 조건:
   - 영상 길이 60초~5분 (Shorts 및 장편 제외)
@@ -110,7 +110,7 @@ Supabase (PostgreSQL)
 
 - **프론트엔드** (Vercel): https://newszips.vercel.app
 - **백엔드** (Railway): https://perpetual-kindness-production.up.railway.app
-- **자동 크롤링**: GitHub Actions — 매일 오후 6시 (KST) 자동 실행, 로컬 환경 불필요
+- **자동 크롤링**: GitHub Actions — 매일 오전 6시 (KST) 자동 실행, 로컬 환경 불필요
 
 ---
 
@@ -181,7 +181,7 @@ data/
 | DB | Supabase (PostgreSQL) |
 | 백엔드 | FastAPI → Railway 배포 |
 | 프론트엔드 | React → Vercel 배포 |
-| 자동화 | GitHub Actions (매일 오후 6시 KST) |
+| 자동화 | GitHub Actions (매일 오전 6시 KST) |
 
 ---
 
