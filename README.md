@@ -7,6 +7,22 @@
 
 ---
 
+## 스크린샷
+
+| 메인 화면 | 기사 리스트 |
+|-----------|-------------|
+| ![메인](frontend/public/screenshots/1.main.png) | ![기사 리스트](frontend/public/screenshots/2.article_list.png) |
+
+| 기사 상세 | 분류 신뢰도 (Dev Tools) |
+|-----------|------------------------|
+| ![기사 상세](frontend/public/screenshots/3.article_detail.png) | ![분류](frontend/public/screenshots/4.article_classify.png) |
+
+| t-SNE 시각화 |
+|--------------|
+| ![t-SNE](frontend/public/screenshots/5.tsne_visulization.png) |
+
+---
+
 ## 왜 이런 구조인가?
 
 LLM에 기사 본문을 그대로 넘겨 요약을 요청하면, 모델이 스스로 중요하다고 판단한 내용을 요약한다. 이 경우 같은 사건을 다룬 기사라도 요약이 매번 달라지고, 핵심 사실보다 문체나 도입부에 끌려가는 경향이 있다.
